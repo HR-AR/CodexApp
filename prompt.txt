@@ -1,0 +1,47 @@
+# Day-Summary & Action-Hub
+You are ChatGPT running inside Codex CLI with full shell/tool access.  
+Generate **all** code, config, and setup steps for the following project.  
+Ask for no confirmations; create files directly and manage the venv yourself.
+
+────────────────────────────────────────────────────────────────────────────
+1️⃣  FUNCTIONAL SPEC
+• Accept raw transcript text **(stdin, file-upload, or Limitless API pull)**  
+  – If a `--date YYYY-MM-DD` flag is passed, pull that day’s LLM transcript via  
+    Limitless GraphQL (`/lifelogs?date=`).  
+  – Default to **yesterday (America/Chicago)** when no date is given.
+
+• Summarise with OpenAI Chat Completions:  
+  ① Concise, story-style narrative of the day (≤ 300 words).  
+  ② Bullet **action items** tagged **[Business]** or **[Personal]**.  
+  ③ Each bullet uses Todoist quick-add syntax  
+     (e.g. `"Buy dog food @errands p1 due:tomorrow"`).
+
+• Persist narrative & tasks to a Notion DB **Daily Journals**  
+  – Schema: Date, Narrative (rich-text), Tasks (rich-text), Time Blocks (multi-select).
+
+• UI: Streamlit SPA  
+  – Left column: narrative.  
+  – Right column: two expandable sections “Business Tasks” & “Personal Tasks”, each  
+    with a **Send to Todoist** button that POSTs to `/tasks` via Todoist REST API.  
+  – Show success/fail toast for every task push.
+
+🕒  TIMESTAMPED NARRATIVE  
+• During chunking capture each chunk’s first/last ISO-8601 timestamp  
+  (present in Limitless LLM output).  
+• Prefix every paragraph with `⏰ 08:15-08:47 – ` (start–end).  
+• Store the same ranges in the Notion **Time Blocks** property.
+
+────────────────────────────────────────────────────────────────────────────
+2️⃣  NON-FUNCTIONAL
+• Handle unlimited transcript size via recursive **chunk-and-map-reduce**  
+  (12 k-token window).  
+• OpenAI params: `temperature 0.3`, `top_p 1`, `seed 123`.  
+• Log every step with `streamlit.logger`.  
+• Include unit tests for summariser and classifier.
+
+2️⃣-B   MODEL FLEXIBILITY
+• Centralise model choice in `config.py`  
+
+```python
+DEFAULT_MODEL = os.getenv("OPENAI_DEFAULT_MODEL", "")   # leave blank by default
+MODEL_ALIASES = {"best_reasoning": None}                # resolved at runtime
